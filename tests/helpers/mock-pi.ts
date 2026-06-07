@@ -49,16 +49,23 @@ export function makeCommandRegistryPi(existing: string[] = []): CommandRegistryP
 export interface NotifyCtx {
   ctx: ExtensionCommandContext;
   notified: Array<{ message: string; type?: string }>;
+  confirmations: Array<{ title: string; message: string }>;
 }
 
 /** A command context that captures ui.notify calls and no-ops the rest. */
-export function makeNotifyCtx(): NotifyCtx {
+export function makeNotifyCtx(confirmResult = true): NotifyCtx {
   const notified: Array<{ message: string; type?: string }> = [];
+  const confirmations: Array<{ title: string; message: string }> = [];
   const ctx = {
+    hasUI: true,
     ui: {
       notify: (message: string, type?: string) => notified.push({ message, type }),
       setStatus: () => {},
+      confirm: (title: string, message: string) => {
+        confirmations.push({ title, message });
+        return Promise.resolve(confirmResult);
+      },
     },
   } as unknown as ExtensionCommandContext;
-  return { ctx, notified };
+  return { ctx, notified, confirmations };
 }

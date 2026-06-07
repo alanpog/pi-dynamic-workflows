@@ -6,6 +6,14 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFile
 import { join } from "node:path";
 import { USER_WORKFLOW_SAVED_DIR, WORKFLOW_SAVED_DIR } from "./config.js";
 
+export interface SavedWorkflowParameter {
+  type?: string;
+  description?: string;
+  required?: boolean;
+  default?: unknown;
+  enum?: unknown[];
+}
+
 export interface SavedWorkflow {
   /** Command name (filename without extension). */
   name: string;
@@ -14,7 +22,11 @@ export interface SavedWorkflow {
   /** The workflow script. */
   script: string;
   /** Optional parameter schema for parameterized workflows. */
-  parameters?: Record<string, { type: string; description?: string; required?: boolean; default?: unknown }>;
+  parameters?: Record<string, SavedWorkflowParameter>;
+  /** Preferred parameter to receive a natural-language/free-text invocation. */
+  primaryParameter?: string;
+  /** Optional guidance shown to the LLM/user when interpreting free text. */
+  argumentHint?: string;
   /** Where this workflow is saved. */
   location: "project" | "user";
   /** Full file path. */

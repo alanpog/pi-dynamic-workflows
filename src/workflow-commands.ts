@@ -216,7 +216,7 @@ export function registerWorkflowCommands(
             script: run.script,
             location: "project",
           });
-          registerSavedWorkflow(pi, opts.cwd ?? process.cwd(), saved, undefined, () =>
+          registerSavedWorkflow(pi, opts.cwd ?? process.cwd(), saved, manager, () =>
             storage.list().some((w) => w.name === saved.name),
           );
           ctx.ui.notify(`Saved /${name} (from ${run.runId})`, "info");

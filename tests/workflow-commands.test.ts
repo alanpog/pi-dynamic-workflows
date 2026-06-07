@@ -465,3 +465,62 @@ test("/workflows <unknown> warns usage", async () => {
   assert.equal(h.notified[0].type, "warning");
   assert.match(h.notified[0].message, /Unknown subcommand/);
 });
+
+test("/workflows save registers newly saved workflow with shared manager", async () => {
+  const registered: Array<{ name: string; handler: Handler }> = [];
+  const savedWorkflows: any[] = [];
+  const storage: any = {
+    save: (w: any) => {
+      const saved = { ...w, location: "project", path: "/tmp/saved.json", savedAt: new Date().toISOString() };
+      savedWorkflows.push(saved);
+      return saved;
+    },
+    list: () => savedWorkflows,
+  };
+  let startedBackground = false;
+  const manager: any = {
+    listRuns: () => [
+      {
+        runId: "run-save",
+        workflowName: "saved-demo",
+        status: "completed",
+        script: "export const meta = { name: 'saved_demo', description: 'saved demo' };\nreturn { ok: true }",
+        agents: [],
+        logs: [],
+      },
+    ],
+    getSnapshot: () => null,
+    getRun: () => undefined,
+    pause: () => false,
+    resume: async () => false,
+    stop: () => false,
+    deleteRun: () => false,
+    startInBackground: () => {
+      startedBackground = true;
+      return { runId: "run-bg", promise: Promise.resolve({ result: {} }) };
+    },
+    on: () => {},
+    off: () => {},
+  };
+  const pi: any = {
+    getCommands: () => registered.map((c) => ({ name: c.name })),
+    registerCommand: (name: string, opts: { handler: Handler }) => registered.push({ name, handler: opts.handler }),
+    sendMessage: async () => {},
+  };
+
+  registerWorkflowCommands(pi as ExtensionAPI, manager as WorkflowManager, { storage });
+  const workflows = registered.find((c) => c.name === "workflows");
+  assert.ok(workflows, "/workflows command should register");
+  await workflows.handler("save saved-now run-save", {
+    hasUI: true,
+    ui: { notify: () => {}, confirm: async () => true, setStatus: () => {} },
+  });
+
+  const savedCommand = registered.find((c) => c.name === "saved-now");
+  assert.ok(savedCommand, "new saved command should be registered immediately");
+  await savedCommand.handler("", {
+    hasUI: true,
+    ui: { notify: () => {}, confirm: async () => true, setStatus: () => {} },
+  });
+  assert.equal(startedBackground, true, "new saved command should use the shared manager background path");
+});

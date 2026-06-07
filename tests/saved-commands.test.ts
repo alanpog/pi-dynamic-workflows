@@ -166,3 +166,141 @@ describe("registerSavedWorkflow", () => {
     assert.match(notified[0].message, /deleted/i);
   });
 });
+
+// Regression coverage for structured saved-workflow invocation UX.
+describe("saved workflow structured invocation UX", () => {
+  it("maps free text to the primary parameter before confirmation", async () => {
+    const { registerSavedWorkflow } = await load();
+    let receivedArgs: unknown;
+    const manager = {
+      startInBackground: (_script: string, args: unknown) => {
+        receivedArgs = args;
+        return { runId: "run-free", promise: Promise.resolve({ result: { report: "done" } }) };
+      },
+      on: () => {},
+      off: () => {},
+    };
+    const { pi, commands } = makeCommandRegistryPi();
+    const wf = {
+      name: "research",
+      description: "Research a topic",
+      script: "export...",
+      parameters: { query: { type: "string", required: true }, depth: { type: "string", default: "normal" } },
+      primaryParameter: "query",
+    };
+    registerSavedWorkflow(pi, "/cwd", wf, manager as never);
+
+    const { ctx, confirmations } = makeNotifyCtx();
+    await commands[0].handler("compare workflow packages", ctx);
+
+    assert.deepEqual(receivedArgs, { query: "compare workflow packages", depth: "normal" });
+    assert.equal(confirmations.length, 1, "should show a confirmation preview");
+    assert.match(confirmations[0].message, /compare workflow packages/);
+  });
+
+  it("does not run when required params are missing", async () => {
+    const { registerSavedWorkflow } = await load();
+    let startedBackground = false;
+    const manager = {
+      startInBackground: () => {
+        startedBackground = true;
+        return { runId: "run-missing", promise: Promise.resolve({ result: {} }) };
+      },
+    };
+    const { pi, commands } = makeCommandRegistryPi();
+    const wf = {
+      name: "needs-query",
+      description: "Needs a query",
+      script: "export...",
+      parameters: { query: { type: "string", required: true } },
+    };
+    registerSavedWorkflow(pi, "/cwd", wf, manager as never);
+
+    const { ctx, notified, confirmations } = makeNotifyCtx();
+    await commands[0].handler("", ctx);
+
+    assert.equal(startedBackground, false, "should not start a workflow with missing required params");
+    assert.equal(confirmations.length, 0, "should not confirm an invalid invocation");
+    assert.match(notified[0].message, /query/);
+  });
+
+  it("cancels before execution when confirmation is rejected", async () => {
+    const { registerSavedWorkflow } = await load();
+    let startedBackground = false;
+    const manager = {
+      startInBackground: () => {
+        startedBackground = true;
+        return { runId: "run-cancel", promise: Promise.resolve({ result: {} }) };
+      },
+    };
+    const { pi, commands } = makeCommandRegistryPi();
+    const wf = {
+      name: "cancel-me",
+      description: "Cancelable",
+      script: "export...",
+      parameters: { query: { type: "string", required: true } },
+      primaryParameter: "query",
+    };
+    registerSavedWorkflow(pi, "/cwd", wf, manager as never);
+
+    const { ctx, confirmations } = makeNotifyCtx(false);
+    await commands[0].handler("do not run", ctx);
+
+    assert.equal(confirmations.length, 1);
+    assert.equal(startedBackground, false, "confirmation cancel should prevent execution");
+  });
+
+  it("manager-backed saved command returns without awaiting workflow completion", async () => {
+    const { registerSavedWorkflow } = await load();
+    let resolveRun!: (value: unknown) => void;
+    const neverUntilResolved = new Promise((resolve) => {
+      resolveRun = resolve;
+    });
+    const manager = {
+      startInBackground: () => ({ runId: "run-nonblock", promise: neverUntilResolved }),
+      on: () => {},
+      off: () => {},
+    };
+    const { pi, commands } = makeCommandRegistryPi();
+    const wf = { name: "nonblock", description: "Nonblocking", script: "export..." };
+    registerSavedWorkflow(pi, "/cwd", wf, manager as never);
+
+    const { ctx } = makeNotifyCtx();
+    const handlerPromise = commands[0].handler("", ctx);
+    const raced = await Promise.race([
+      handlerPromise.then(() => "returned"),
+      new Promise((r) => setTimeout(() => r("blocked"), 30)),
+    ]);
+    resolveRun({ result: {} });
+
+    assert.equal(raced, "returned", "saved command handler must not await the manager promise");
+  });
+
+  it("ambiguous free text does not run when no primary parameter can be chosen", async () => {
+    const { registerSavedWorkflow } = await load();
+    let startedBackground = false;
+    const manager = {
+      startInBackground: () => {
+        startedBackground = true;
+        return { runId: "run-ambiguous", promise: Promise.resolve({ result: {} }) };
+      },
+    };
+    const { pi, commands } = makeCommandRegistryPi();
+    const wf = {
+      name: "ambiguous",
+      description: "Ambiguous",
+      script: "export...",
+      parameters: {
+        query: { type: "string", required: true },
+        audience: { type: "string", required: true },
+      },
+    };
+    registerSavedWorkflow(pi, "/cwd", wf, manager as never);
+
+    const { ctx, notified } = makeNotifyCtx();
+    await commands[0].handler("explain workflows", ctx);
+
+    assert.equal(startedBackground, false);
+    assert.match(notified[0].message, /could not map|needs parameter/i);
+  });
+});
