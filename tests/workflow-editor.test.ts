@@ -61,40 +61,40 @@ async function load() {
 }
 
 describe("hasTrigger", () => {
-  it('returns true for "workflow"', async () => {
+  it('returns true for "ultracode"', async () => {
     const { hasTrigger } = await load();
-    assert.equal(hasTrigger("run a workflow test"), true);
+    assert.equal(hasTrigger("run an ultracode test"), true);
   });
 
-  it('returns true for "workflows"', async () => {
+  it('returns false for "workflow"', async () => {
     const { hasTrigger } = await load();
-    assert.equal(hasTrigger("use workflows mode"), true);
+    assert.equal(hasTrigger("use workflow mode"), false);
   });
 
   it("returns true for trigger at start", async () => {
     const { hasTrigger } = await load();
-    assert.equal(hasTrigger("workflow something"), true);
+    assert.equal(hasTrigger("ultracode something"), true);
   });
 
   it("returns true for trigger at end", async () => {
     const { hasTrigger } = await load();
-    assert.equal(hasTrigger("test workflow"), true);
+    assert.equal(hasTrigger("test ultracode"), true);
   });
 
   it("returns true case-insensitively", async () => {
     const { hasTrigger } = await load();
-    assert.equal(hasTrigger("WORKFLOW now"), true);
-    assert.equal(hasTrigger("WorkFlows are cool"), true);
+    assert.equal(hasTrigger("ULTRACODE now"), true);
+    assert.equal(hasTrigger("UltraCode is cool"), true);
   });
 
-  it('returns false for "/workflows" (slash command)', async () => {
+  it('returns false for "/ultracode" (slash command)', async () => {
     const { hasTrigger } = await load();
-    assert.equal(hasTrigger("/workflows list"), false);
+    assert.equal(hasTrigger("/ultracode"), false);
   });
 
-  it('returns false for "/workflow"', async () => {
+  it("returns false for ordinary workflow words", async () => {
     const { hasTrigger } = await load();
-    assert.equal(hasTrigger("/workflow"), false);
+    assert.equal(hasTrigger("workflow workflows"), false);
   });
 
   it("returns false for unrelated text", async () => {
@@ -107,37 +107,37 @@ describe("hasTrigger", () => {
     assert.equal(hasTrigger(""), false);
   });
 
-  it('returns false for "working flow" (space in middle)', async () => {
+  it('returns false for "ultra code" (space in middle)', async () => {
     const { hasTrigger } = await load();
-    assert.equal(hasTrigger("working flow"), false);
+    assert.equal(hasTrigger("ultra code"), false);
   });
 
   it("works with non-ASCII characters around the trigger", async () => {
     const { hasTrigger } = await load();
-    assert.equal(hasTrigger("zrób workflow test"), true);
-    assert.equal(hasTrigger("uruchom workflows"), true);
+    assert.equal(hasTrigger("zrób ultracode test"), true);
+    assert.equal(hasTrigger("uruchom ultracode"), true);
   });
 });
 
 describe("endsWithTrigger", () => {
-  it('returns true when text ends with "workflow"', async () => {
+  it('returns true when text ends with "ultracode"', async () => {
     const { endsWithTrigger } = await load();
-    assert.equal(endsWithTrigger("run a workflow"), true);
+    assert.equal(endsWithTrigger("run ultracode"), true);
   });
 
-  it('returns true when text ends with "workflows"', async () => {
+  it('returns false when text ends with "workflow"', async () => {
     const { endsWithTrigger } = await load();
-    assert.equal(endsWithTrigger("see workflows"), true);
+    assert.equal(endsWithTrigger("see workflows"), false);
   });
 
   it("returns false when trigger is not at end", async () => {
     const { endsWithTrigger } = await load();
-    assert.equal(endsWithTrigger("workflow test"), false);
+    assert.equal(endsWithTrigger("ultracode test"), false);
   });
 
-  it('returns false for "/workflows"', async () => {
+  it('returns false for "/ultracode"', async () => {
     const { endsWithTrigger } = await load();
-    assert.equal(endsWithTrigger("/workflows"), false);
+    assert.equal(endsWithTrigger("/ultracode"), false);
   });
 
   it("returns false for empty string", async () => {
@@ -147,7 +147,7 @@ describe("endsWithTrigger", () => {
 
   it("returns true with trailing non-ASCII prefix", async () => {
     const { endsWithTrigger } = await load();
-    assert.equal(endsWithTrigger("zrób workflow"), true);
+    assert.equal(endsWithTrigger("zrób ultracode"), true);
   });
 });
 
@@ -198,13 +198,13 @@ describe("colorizeWorkflow", () => {
     assert.equal(colorizeWorkflow("hello world", 0), "hello world");
   });
 
-  it("colorizes workflow with ANSI escapes", async () => {
+  it("colorizes ultracode with ANSI escapes", async () => {
     const { colorizeWorkflow } = await load();
-    const result = colorizeWorkflow("run a workflow", 0);
-    // Should contain ANSI escapes around "workflow"
+    const result = colorizeWorkflow("run ultracode", 0);
+    // Should contain ANSI escapes around "ultracode"
     assert.ok(result.includes("\x1b[38;5;"), "should contain \x1b[38;5;");
     // Per-character ANSI wrapping (each letter individually colored)
-    assert.ok(result.startsWith("run a "), "should start with run a ");
+    assert.ok(result.startsWith("run "), "should start with run ");
     assert.ok(result.includes("\x1b[38;5;"), "should contain \x1b[38;5;");
     assert.ok(result.includes("m"), "should contain m");
   });
@@ -216,7 +216,7 @@ describe("colorizeWorkflow", () => {
 
   it("preserves existing ANSI in the line", async () => {
     const { colorizeWorkflow } = await load();
-    const result = colorizeWorkflow("\x1b[1mworkflow\x1b[0m", 0);
+    const result = colorizeWorkflow("\x1b[1multracode\x1b[0m", 0);
     // The bold marker should survive
     assert.ok(result.includes("\x1b[1m"), "should contain \x1b[1m");
     // work around the trigger letters — the rainbow wraps individual chars
@@ -226,21 +226,21 @@ describe("colorizeWorkflow", () => {
     const { colorizeWorkflow } = await load();
     // Use a fixed palette of 2 colors for predictability
     const palette = [196, 46];
-    const result = colorizeWorkflow("workflow workflow", 0, palette);
-    // Per-character ANSI wrapping — each of the 16 chars (2x "workflow" = 16 chars)
+    const result = colorizeWorkflow("ultracode ultracode", 0, palette);
+    // Per-character ANSI wrapping — each of the 18 chars (2x "ultracode" = 18 chars)
     // should have ANSI color codes around them
     // The ESC (U+001B) control char is intentional here — it matches real ANSI
     // color codes emitted by colorizeWorkflow.
     // biome-ignore lint/suspicious/noControlCharactersInRegex: matching literal ANSI escape sequences
     const ansiCodes = result.match(/\x1b\[38;5;\d+m/g);
-    assert.equal(ansiCodes.length, 16, "each char of both words should be colored");
+    assert.equal(ansiCodes.length, 18, "each char of both words should be colored");
   });
 
   it("handles tick shift producing different colors", async () => {
     const { colorizeWorkflow } = await load();
     const palette = [196, 46];
-    const t0 = colorizeWorkflow("workflow", 0, palette);
-    const t1 = colorizeWorkflow("workflow", 1, palette);
+    const t0 = colorizeWorkflow("ultracode", 0, palette);
+    const t1 = colorizeWorkflow("ultracode", 1, palette);
     // Different tick → different color codes (may differ per char)
     assert.notEqual(t0, t1, "different tick should produce different output");
   });
@@ -341,16 +341,16 @@ describe("WorkflowEditor", () => {
   it("isActive() returns true when trigger text is present", () => {
     const { editor } = createEditor();
     assert.equal(editor.isActive(), false, "should be inactive on empty editor");
-    editor.setText("run a workflow test");
+    editor.setText("run an ultracode test");
     assert.equal(editor.isActive(), true, "should be active after typing trigger");
   });
 
   it("isActive() returns false after backspace disarms trigger", () => {
     const { editor } = createEditor();
-    editor.setText("workflow");
+    editor.setText("ultracode");
     assert.equal(editor.isActive(), true, "active after typing trigger");
 
-    // Backspace (DEL = \x7f) when cursor is right after "workflow" should disarm
+    // Backspace (DEL = \x7f) when cursor is right after "ultracode" should disarm
     editor.handleInput("\x7f");
     assert.equal(editor.isActive(), false, "should be inactive after backspace disarm");
   });
@@ -372,7 +372,7 @@ describe("WorkflowEditor", () => {
     assert.equal(state.active, false, "initially inactive");
 
     // setText alone does NOT call syncState — render() does.
-    editor.setText("test workflow");
+    editor.setText("test ultracode");
     editor.render(80);
     assert.equal(state.active, true, "active after setText + render");
 
@@ -479,14 +479,14 @@ describe("installWorkflowEditor", () => {
     assert.deepEqual(savedTools, [], "tools should not change for non-trigger input");
 
     // Invoke with trigger text — should save and add WORKFLOW_TOOL_NAME
-    const resultTrigger = inputHandler?.({ source: "interactive", text: "run a workflow test" });
+    const resultTrigger = inputHandler?.({ source: "interactive", text: "run an ultracode test" });
     assert.ok(typeof resultTrigger === "object" && resultTrigger !== null, "should return a result object");
     assert.equal(resultTrigger.action, "transform", "should return transform action");
     assert.ok(
       typeof resultTrigger.text === "string" && resultTrigger.text.length > 0,
       "should return transformed text",
     );
-    assert.ok(resultTrigger.text?.includes("run a workflow test"), "transformed text should include original prompt");
+    assert.ok(resultTrigger.text?.includes("run an ultracode test"), "transformed text should include original prompt");
     assert.ok(savedTools.includes("workflow"), `saved tools (${savedTools.join(", ")}) should include "workflow"`);
   });
 
@@ -519,7 +519,7 @@ describe("installWorkflowEditor", () => {
     const initialTools = ["bash", "read", "edit", "write"];
 
     // First trigger: save tools and add "workflow"
-    inputHandler?.({ source: "interactive", text: "trigger workflow test" });
+    inputHandler?.({ source: "interactive", text: "trigger ultracode test" });
     assert.ok(currentTools.includes("workflow"), "workflow tool should be added");
     assert.ok(currentTools.length > initialTools.length, "tool set should be expanded");
 
@@ -552,7 +552,7 @@ describe("installWorkflowEditor", () => {
     const inputHandler = captured.find((c) => c.event === "input")?.handler;
     assert.notEqual(inputHandler, undefined);
 
-    inputHandler?.({ source: "interactive", text: "run workflow" });
+    inputHandler?.({ source: "interactive", text: "run ultracode" });
     // "workflow" was already present, so tool count should not increase beyond duplicates
     assert.equal(currentTools.filter((t) => t === "workflow").length, 1, "workflow should appear exactly once");
   });
@@ -580,7 +580,7 @@ describe("installWorkflowEditor", () => {
     assert.notEqual(inputHandler, undefined);
 
     // Non-interactive source with trigger text should still transform
-    const result = inputHandler?.({ source: "paste", text: "run a workflow scenario" });
+    const result = inputHandler?.({ source: "paste", text: "run ultracode scenario" });
     assert.deepEqual(result, { action: "continue" }, "non-interactive source should return continue");
   });
 });

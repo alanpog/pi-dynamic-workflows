@@ -1,8 +1,8 @@
 /**
  * "Workflows mode" input affordance, à la a smart input box:
  *
- *  - While the editor text contains the word `workflow`/`workflows`, those letters
- *    render as a flowing rainbow, signalling that submitting will engage a workflow.
+ *  - While the editor text contains the word `ultracode`, those letters render as
+ *    a flowing rainbow, signalling that submitting will engage a workflow.
  *  - Pressing Backspace immediately after such a word toggles the highlight OFF
  *    (the word stays, but turns plain white) — a non-destructive "don't run a
  *    workflow after all". Re-typing a fresh trigger word turns it back on.
@@ -20,15 +20,15 @@ import { CustomEditor, type ExtensionAPI, type ExtensionUIContext } from "@earen
 import type { EditorTheme, TUI } from "@earendil-works/pi-tui";
 import { type EffortState, effortDirective, isSubstantive } from "./effort-command.js";
 
-// A trigger is `workflow`/`workflows` (substring, case-insensitive) that is NOT
-// immediately preceded by `/` — so a slash command like `/workflows` or `/workflow`
-// is left alone (not colored, not armed).
+// A trigger is `ultracode` (substring, case-insensitive) that is NOT
+// immediately preceded by `/` — so the slash command `/ultracode` is left alone
+// (not colored, not armed).
 /** Matches a trigger anywhere in the text. */
-const TRIGGER = /(?<!\/)workflows?/i;
+const TRIGGER = /(?<!\/)ultracode/i;
 /** Global variant for finding every occurrence to colorize. */
-const TRIGGER_G = /(?<!\/)workflows?/gi;
+const TRIGGER_G = /(?<!\/)ultracode/gi;
 /** True when the text immediately before the cursor ends with a trigger word. */
-const TRIGGER_AT_END = /(?<!\/)workflows?$/i;
+const TRIGGER_AT_END = /(?<!\/)ultracode$/i;
 
 /** 256-color ring cycling through the spectrum — shifted by a tick to "flow". */
 export const RAINBOW = [
@@ -92,9 +92,9 @@ export function tokenizeAnsi(line: string): AnsiToken[] {
 }
 
 /**
- * Colorize every `workflow`/`workflows` occurrence in a rendered line with a
- * flowing rainbow, leaving all ANSI escapes (cursor, markers) intact. Returns the
- * line unchanged when it contains no trigger.
+ * Colorize every `ultracode` occurrence in a rendered line with a flowing
+ * rainbow, leaving all ANSI escapes (cursor, markers) intact. Returns the line
+ * unchanged when it contains no trigger.
  */
 export function colorizeWorkflow(line: string, tick: number, palette: number[] = RAINBOW): string {
   const tokens = tokenizeAnsi(line);
@@ -231,7 +231,7 @@ export function buildForcedWorkflowPrompt(text: string, extraDirective?: string)
     text,
     "",
     "---",
-    "[workflows mode is ON for this message]",
+    "[ultracode one-shot workflow mode is ON for this message]",
     "You MUST handle this request by calling the tool named exactly `workflow` (Pi's",
     "deterministic JavaScript workflow-orchestration tool from pi-dynamic-workflows).",
     "Write a workflow script that fans the task out across subagents via",
@@ -241,7 +241,7 @@ export function buildForcedWorkflowPrompt(text: string, extraDirective?: string)
     "- answer directly or in prose,",
     "- call the `subagent` tool yourself,",
     "- use any skill or command (e.g. pi-subagents, /code-review, deep-research),",
-    '- or interpret the word "workflow/workflows" loosely as some other parallel/audit approach.',
+    '- or interpret the word "ultracode" loosely as some other parallel/audit approach.',
     "Even for a small task, wrap it in a minimal `workflow` call with at least one agent().",
   ];
   if (extraDirective) lines.push("", extraDirective);
@@ -280,7 +280,7 @@ export function installWorkflowEditor(
   // BEFORE the input event fires (the actual prompt processing is async).
   pi.on("input", (event: { source?: string; text?: string }) => {
     if (event.source !== "interactive" || !event.text) return { action: "continue" } as const;
-    // Arm either when the user typed the "workflow(s)" trigger, or when standing
+    // Arm either when the user typed the "ultracode" trigger, or when standing
     // effort mode is on and the message is a substantive request.
     const triggered = hasTrigger(event.text);
     const byEffort = !triggered && !!effort && effort.level !== "off" && isSubstantive(event.text);

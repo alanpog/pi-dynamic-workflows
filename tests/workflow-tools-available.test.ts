@@ -1,7 +1,7 @@
 /**
  * Tests for tools availability when workflows mode is triggered.
  *
- * The bug: when a user message contains "workflow" (trigger keyword),
+ * The bug: when a user message contains "ultracode" (trigger keyword),
  * installWorkflowEditor's input handler calls:
  *   pi.setActiveTools?.([WORKFLOW_TOOL_NAME]);
  * which restricts ALL tools to ONLY the workflow tool.
@@ -10,7 +10,7 @@
  *
  * The fix: preserve default Pi tools alongside the workflow tool.
  * These tests verify that default tools remain available after the
- * workflows-mode trigger fires.
+ * ultracode one-shot workflow trigger fires.
  */
 
 import assert from "node:assert/strict";
@@ -69,7 +69,7 @@ function createMockPi(initialTools: string[] = [...DEFAULT_PI_TOOLS]): MockPi {
 // ---------------------------------------------------------------------------
 
 describe("installWorkflowEditor - tool availability", () => {
-  it("should include default Pi tools when input handler fires with 'workflow'", async () => {
+  it("should include default Pi tools when input handler fires with 'ultracode'", async () => {
     const { installWorkflowEditor } = await import("../src/workflow-editor.js");
 
     const mockPi = createMockPi([...DEFAULT_PI_TOOLS]);
@@ -80,20 +80,20 @@ describe("installWorkflowEditor - tool availability", () => {
 
     installWorkflowEditor(mockPi as unknown as ExtensionAPI, ui as unknown as ExtensionUIContext);
 
-    // Simulate user submitting a message with "workflow" keyword
+    // Simulate user submitting a message with "ultracode" keyword
     const inputHandlers = mockPi.handlers.input;
     assert.ok(inputHandlers, "input handler should be registered");
     assert.equal(inputHandlers.length, 1);
 
     const result = inputHandlers[0]({
       source: "interactive",
-      text: "przetestuj to workflow zadanie",
+      text: "przetestuj to ultracode zadanie",
     });
 
     // Verify transform result
     assert.deepEqual(result, {
       action: "transform",
-      text: buildForcedWorkflowPrompt("przetestuj to workflow zadanie"),
+      text: buildForcedWorkflowPrompt("przetestuj to ultracode zadanie"),
     });
 
     // Verify getActiveTools was called
@@ -112,7 +112,7 @@ describe("installWorkflowEditor - tool availability", () => {
     for (const tool of DEFAULT_PI_TOOLS) {
       assert.ok(
         calledWith.includes(tool),
-        `"${tool}" should still be available when workflows mode is triggered (got: [${calledWith.join(", ")}])`,
+        `"${tool}" should still be available when ultracode mode is triggered (got: [${calledWith.join(", ")}])`,
       );
     }
 
@@ -136,11 +136,11 @@ describe("installWorkflowEditor - tool availability", () => {
 
     installWorkflowEditor(mockPi as unknown as ExtensionAPI, ui as unknown as ExtensionUIContext);
 
-    // Trigger input with "workflows"
+    // Trigger input with "ultracode"
     const inputHandlers = mockPi.handlers.input;
     inputHandlers[0]({
       source: "interactive",
-      text: "run workflows",
+      text: "run ultracode",
     });
 
     // Verify tools were set (with default tools preserved)
@@ -200,7 +200,7 @@ describe("installWorkflowEditor - tool availability", () => {
     const inputHandlers = mockPi.handlers.input;
     const result = inputHandlers[0]({
       source: "api", // non-interactive
-      text: "run a workflow",
+      text: "run ultracode",
     });
 
     assert.deepEqual(result, { action: "continue" });
@@ -245,7 +245,7 @@ describe("installWorkflowEditor - tool availability", () => {
     assert.doesNotThrow(() => {
       inputHandlers[0]({
         source: "interactive",
-        text: "test workflow",
+        text: "test ultracode",
       });
     });
   });
@@ -268,7 +268,7 @@ describe("installWorkflowEditor - tool availability", () => {
     // Should not throw — the catch block handles it
     const result = inputHandlers[0]({
       source: "interactive",
-      text: "test workflow",
+      text: "test ultracode",
     });
 
     // Should still return the transform action even if setActiveTools failed
@@ -291,13 +291,13 @@ describe("installWorkflowEditor - tool availability", () => {
     const inputHandlers = mockPi.handlers.input;
     inputHandlers[0]({
       source: "interactive",
-      text: "test workflow 1",
+      text: "test ultracode 1",
     });
 
     // Second trigger (before turn_end)
     inputHandlers[0]({
       source: "interactive",
-      text: "test workflow 2",
+      text: "test ultracode 2",
     });
 
     // setActiveTools should only have been called once (savedTools is already set)
@@ -313,10 +313,10 @@ describe("installWorkflowEditor - tool availability", () => {
     assert.equal(mockPi.setActiveTools.mock.callCount(), 0, "second turn_end should not call setActiveTools");
   });
 
-  it("should work with different keyword variations: 'workflow', 'workflows', 'WORKFLOW'", async () => {
+  it("should work with different keyword variations: 'ultracode', 'ULTRACODE'", async () => {
     const { installWorkflowEditor } = await import("../src/workflow-editor.js");
 
-    for (const keyword of ["workflow", "workflows", "WORKFLOW", "WorkFlows"]) {
+    for (const keyword of ["ultracode", "ULTRACODE", "UltraCode"]) {
       const mockPi = createMockPi();
       const ui = { setEditorComponent: mock.fn() };
       installWorkflowEditor(mockPi as unknown as ExtensionAPI, ui as unknown as ExtensionUIContext);

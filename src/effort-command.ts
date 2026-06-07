@@ -39,7 +39,7 @@ export function effortDirective(level: EffortLevel): string | undefined {
 /**
  * Whether a message should auto-arm under effort mode: a real interactive request,
  * not a terse acknowledgement or a slash command. (hasTrigger handles the explicit
- * "workflow(s)" keyword separately.)
+ * "ultracode" keyword separately.)
  */
 export function isSubstantive(text: string): boolean {
   const t = text.trim();
